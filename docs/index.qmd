@@ -1,0 +1,776 @@
+---
+title: "Mapping the Unseen: Small Area Estimation for Urban Analysis"
+author:
+  - name: Clara Peiret-García
+    email: c.peiret-garcia@ucl.ac.uk
+    affiliations:
+      - name: Centre for Advanced Spatial Analysis, UCL
+  - name: Anna Freni Sterrantino
+    affiliations:
+      - name: Alan Turing Institute | Imperial College London
+  - name: Esra Suel
+    affiliations:
+      - name: Centre for Advanced Spatial Analysis, UCL
+      
+  - name: Adam Dennett
+    affiliations:
+      - name: Centre for Advanced Spatial Analysis, UCL
+  - name: Gerard Casey
+    affiliations:
+      - name: Arup | Centre for Advanced Spatial Analysis, UCL
+      
+format: html
+editor: visual
+---
+
+Please, make sure you have `R version 4.5.1 (2025-06-13)` installed in your laptop. You can download it from here: <https://cran.r-project.org/>
+
+```{r, message=FALSE}
+# Install required packages if not already installed
+required_packages <- c(
+  "sae", "emdi", "saeTrafo", "hbsae", "SUMMER", "survey",
+  "dplyr", "tidyr", "purrr", "sf", 
+  "ggplot2", "hrbrthemes", "GGally"
+)
+
+to_install <- setdiff(required_packages, rownames(installed.packages()))
+if (length(to_install) > 0) {
+  install.packages(to_install)
+}
+
+if (!isTRUE(requireNamespace("INLA", quietly = TRUE))) {
+  install.packages("INLA", repos=c(getOption("repos"), 
+                  INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
+}
+
+library(sae)          # Small area estimation models
+library(emdi)         # Example datasets
+library(saeTrafo)     # For domain sizes
+library(SUMMER)       # Bayesian SAE
+library(survey)       # Survey designs
+
+library(dplyr)        # For data wrangling
+library(tidyr)        # For data wrangling
+library(purrr)        # For data wrangling
+library(sf)           # For mapping
+library(ggplot2)      # For visualisations
+library(hrbrthemes)   # For visualisations
+library(GGally)       # For visualisations
+```
+
+# Introduction
+
+In this practical we will put into practice the concepts we learnt on the theoretical session of the workshop. Using survey data, we will calculate direct and model-based income estimators. We will explore the different alternatives available when implementing these methods, which will help us choose the most adequate option given data availability. To better understand the implications of using different models, we will compare the results of the estimates generated through different methods. You can access the `.qmd` document for this practical from [this link](https://github.com/cpeiretgarcia/SAE_workshop_CUPUM/blob/main/practical.qmd).
+
+# Data
+
+For this workshop we will be using the European Union Statistics on Income and Living Conditions (EU-SILC). Specifically, we will be using the Austrian EU-SILC data sets available through the `emdi` package. EU-SILC provides detailed information on attributes related to income, material deprivation, labour, housing, childcare, health, access to and use of services, and education.
+
+From the package `emdi` we can load a set of data related to the EU-SILC survey. `eusilcA_smp` is the random independent sample, where each row represents one individuas, and each column represents a unit-level attribute. In total, the sample comprises 1,945 individuals. `eusilcA_popAgg` comprises the area-level covariates for all domains. `eusilcA_pop` is the total population -- it comprises 25,000 observations which we will assume add up to the total population of Austria for this example. Finally, `eusilcA_prox` is the adjacency matrix for every district in Austria.
+
+```{r}
+# Load data
+data("eusilcA_smp")     # Random independent Sample
+data("eusilcA_popAgg")  # Aggregated covariates at district level
+data("eusilcA_pop")     # Population level data
+data("eusilcA_prox")    # Adjacency matrix
+
+# Recode the domain variable as character
+eusilcA_smp$district <- droplevels(eusilcA_smp$district)
+eusilcA_smp$district <- as.character(eusilcA_smp$district)
+```
+
+Let us start by having a look at the sample data `eusilcA_smp`. Each row in the sample represents one individual, and for each of them we have information on a wide range of economic and demographic attributes. In this practical, our **target variable** will be the the equivalised household income (`eqIncome`), which represents the household income adjusted by household composition characteristics.
+
+```{r}
+head(eusilcA_smp)
+```
+
+We can also have a look at the spatial distribution of the observations in the sample.
+
+```{r}
+# Load geospatial data and set CRS
+load_shapeaustria()
+shape_austria_dis <- st_set_crs(shape_austria_dis, 4326) # Set CRS
+
+# Map observations per district
+n_sample <- shape_austria_dis %>% bind_cols(n = eusilcA_smpAgg[,c("n")])
+ggplot() +
+  geom_sf(data = n_sample, aes(fill = n), col = NA) +
+  scale_fill_viridis_b() +
+  labs(
+    title = "Number of observations per district"
+  ) +
+  theme_void()
+```
+
+We see that the observations are unequally distributed across the different districts. Furthermore, we have 24 districts that are not represented in the sample:
+
+```{r}
+# Check if all districts in the population are in the sample
+table(eusilcA_popAgg$Domain %in% unique(eusilcA_smp$district))
+```
+
+This is a relevant fact, since it will significantly affect the results and even the implementation of some SAE methods --remember that direct methods only generate outputs for areas with sampled observations.
+
+Our target variable `eqIncome` follows a skewed distribution, with majority of individuals concentrated around lower income values (€ 20,000). We see very high agreement between sample values and population values.
+
+```{r}
+ggplot() +
+  geom_density(data = eusilcA_smp, aes(x = eqIncome, color = "Sample", linetype = "Sample"), lwd = 1) +
+  geom_density(data = eusilcA_pop, aes(x = eqIncome, color = "Population", linetype = "Population"), lwd = 1) +
+  scale_linetype_manual(name = "", values = c("Population" = "dashed", "Sample" = "solid")) +
+  scale_color_manual(name = "", values = c("Population" = "#ca6702", "Sample" = "#69b3a2")) +
+  labs(
+    title = "Equivalised income distribution",
+    x = "eqIncome",
+    y = "density"
+  ) +
+  theme_ipsum()
+```
+
+Now that we have a better understanding of the data, we can start calculating our estimators.
+
+# Direct estimator
+
+We will start by computing the most simple SAE estimator -- the direct estimator. Direct estimators use only information collected from the domain of interest. They are relatively simple to obtain, since they use the sample weights and population values. However, they are very sensitive to small sample sizes.
+
+We will calculate the direct estimator using the `sae` package. The `direct()` function computes the Horvitz-Thompson estimator of domain means using this formula:
+
+$$
+\hat{\bar{Y_d}} = \frac{1}{N_d} \sum_{i \in s_d} w_{di}Y_{di}
+$$
+
+where $N_d$ is the population at the domain of interest $d$; $s_d$ is the set of sampled observations in domain $d$; $w_{di}$ is the sample weight for unit $i$ in domain $d$; and $Y_{di}$ is the observation of the target variable for unit $i$ in domain $d$, for all $i$ in $S_d$. In addition to the direct estimator of the mean, the `direct()` function also gives us the standard deviation and coefficient of variation for each domain.
+
+From our survey, we know that the `weights` column represent the survey weights, and that sampling was done without replacement. This information can usually be found in the documentation of the survey, together with any clusters or strata that might have been defined by the surveyors. Additionally, we need the total population sizes for each domain in the sample.
+
+
+
+-   Scenario A: We have access for both sampling weights and domain sizes, and from the survey design we know that sampling was performed without replacement. In this case, the direct estimator is calculated as follows:
+
+$$
+\hat{\bar{Y_d}}^{dir} = \frac{1}{N_d} \sum_{i \in s_d} w_{di}y_{di}
+$$ - $\hat{\bar{Y_d}}^{dir}$ is the direct estimator of the variable of interest. - $s_d$ is the sample in domain $d$. - $y_i$ is the value of the target variable for observation $i$ in domain $d$. - $w_{di}$ is the sampling weight of observation $i$. - $N_d$ is the population at domain $d$.
+
+And the variance is computed following this equation:
+
+$$
+\text{Var}(\hat{Y}_d^{dir}) = \frac{\sum_{i \in s_d} w_i (w_i -1)y_i^2}{N_d^2}
+$$
+
+-   Scenario B: We have access to domain sizes, but not to the sampling weights, and we know the sampling was performed without replacement. In this case, we will ignore the sampling weights, just the sample size.
+
+$$
+\hat{Y}_d^{dir} = \frac{1}{n_d} \sum{i \in s_d} y_i 
+$$
+
+And the variance is:
+
+$$
+\text{Var}(\hat{Y}d^{dir}) = \frac{1 - f_d}{n_d} S{d}^2
+$$
+
+Where $f_d = \frac{n_d}{N_d}$ and $S_d^2$ is the sample variance of the domain. Since we are introducing sampling without replacement, the variance of our estimator is reduced, because each time we draw a new sample removes one possibility from the population, slightly reducing the uncertainty for each subsequent draw. The $f_d$ factor ensures the variance is appropriately reduced for large samples relative to the domain size.
+
+-   Scenario C: We have access to sample weights, domain sizes, and know the sampling was done with replacement. In this case, the direct estimator is the same as in Scenario 1, since it also accounts for weights and uses domain sizes:
+
+$$
+\hat{\bar{Y_d}}^{dir} = \frac{1}{N_d} \sum_{i \in s_d} w_{di}y_{di}
+$$
+
+The variance, however, changes, since we do the sampling with replacement:
+
+$$
+\text{Var}(\hat{Y}d^{dir}) = \frac{1}{n_d} \sum_{i \in s_d} (f_d w_i y_i - \hat{Y}_d^{dir})^2
+$$
+
+-   Scenario D: we know that sampling was performed with replacement, but have no access to sample weights nor domain sizes. We calculate the estimator in the same way we did with Scenario B.
+
+$$
+\hat{Y}_d^{dir} = \frac{1}{n_d} \sum{i \in s_d} y_i 
+$$
+
+This time, the variance is calculated as follows:
+
+$$
+\text{Var}(\hat{Y}_d^{dir}) = \frac{S{d}^2}{n_d}
+$$
+
+The scenario of choice will depend on data availability. Let's calculate the direct estimator assuming we have access to sample weights, domain sizes, and know the sampling was run without replacement.
+
+```{r}
+# Clean and match sample population sizes
+domsize_smp <- data.frame(
+  district = names(pop_area_size),
+  N = pop_area_size
+) %>%
+  filter(district %in% eusilcA_smp$district)
+```
+
+```{r}
+# Calculate direct estimator
+dir_est_a <- sae::direct(
+  y = eusilcA_smp$eqIncome,
+  dom = eusilcA_smp$district,
+  sweight = eusilcA_smp$weight,
+  domsize = domsize_smp,
+  replace = FALSE
+)
+
+# Format the direct estimator for future use
+dir_est <- dir_est_a %>% 
+  mutate(Var = SD^2) %>% 
+  dplyr::select("Domain","Direct","Var")
+
+head(dir_est)
+```
+
+### Task – How would you estimate the alternative direct estimators?
+
+Hint: You can use the same formula we used for Scenario A, but changing the parameters that refer to the different alternatives. You can always have a look at what each parameter in the function does, and see some examples by running `?sae::direct()`.
+
+```{r}
+# Scenario B -- No replacement, with domain sizes, no weights
+
+# Scenario C -- With replacement, weights and domain sizes
+
+# Scenario D -- With replacement, no weights nor domain sizes
+
+```
+
+Once we have calculated the direct estimates, we can plot them in a map. We see that there are gaps in our data. This relates to direct estimators only being able to produce estimates based on domain-data only. For domains where sample data has no observations, the direct estimator will not produce an estimate. Additionally, the estimates produced for those areas for which sample sizes are small, will not be accurate.
+
+```{r}
+# Create data frame
+dir_est_a_gdf <- merge(
+  dir_est, 
+  shape_austria_dis[,c("PB")], 
+  by.x = "Domain",
+  by.y = "PB") %>% 
+  st_as_sf()
+
+# Map
+ggplot() +
+  geom_sf(data = shape_austria_dis) +
+  geom_sf(data = dir_est_a_gdf, aes(fill = Direct)) +
+  labs(
+    title = "Horvitz-Thompson Estimates"
+  ) +
+  theme_ipsum()
+```
+
+## Conclusion
+
+We have seen how the direct estimate can produce estimates with minimal information. However, these results can be unreliable when sample sizes are small for our domain of interest, and they cannot be calculated if the domain of interest is not included in the sample. To solve this problem, we rely on model-based small area estimation methods.
+
+# Model-based estimators
+
+When samples are too small, or we have no observations for some domains, direct estimators will not provide us with accurate results, and we need to use model-based methods. There are two types of model-based methods – area- and unit-models. Area models incorporate domain-level information to produce more accurate estimates by "borrowing strength" from other areas, and using that information to improve the estimates for our small sample or out of sample areas. Similarly, unit-level models additionally incorporate unit-level auxiliary information to strengthen the estimates.
+
+## Small Area Estimation in `R`
+
+Before we start calculating our estimates, we will learn a bit more about the available `R` packages for small area estimation. In this practical we will be using two of the most commonly used packages for small area estimation modelling: `sae` and `SUMMER`. Although both packages aim at producing small area estimates in the presence of small sample sizes, they are based on two fundamentally different paradigms.
+
+The `sae` package is based on frequentist methods, while `SUMMER` adopts a Bayesian approach to producing estimates. While in the frequentist approach the model estimates are assumed to be fixed, Bayesian models treat parameters as random variables. The Bayesian framework allows for incorporating prior information that allows for more flexible modelling, particularly in the presence of scarce or highly variable data, as is the case of small area estimation.
+
+## Area-level model
+
+Area-level estimates use domain-level data to improve the performance of direct estimates. The basic area-level model, the Fay-Herriot model, uses a two-step approach to do this: first, the model estimates a direct estimator in what is known as the *sampling model*. Next, the model computes area-specific random effects in what is known as the *linking model*.
+
+The sampling model is formalised as follows:
+
+$$
+\hat{\theta}_i^{\mathrm{DIR}} = \theta_i + \epsilon_i; \quad \epsilon_i \sim^{\mathrm{ind}} \mathcal{N}(0, V_i), \quad i = 1, \ldots, M
+$$
+
+Where $V_i$ is the sampling variance of the direct estimator $\hat{\theta}_i^{\mathrm{DIR}}$ and $\epsilon_i$ represents the sampling error, which is assumed to be independently distributed.
+
+The linking model allows us to borrow strength from other areas by assuming the small area parameter $\theta_i$ is related to auxiliary variables $x_i = (x_{i1}, x_{i2}, ..., x_{ip})'$ through a linear regression model given by:
+
+$$
+\theta_i = x_i' \beta + u_i = \alpha + \beta \bar{x_i}; \quad u_i \sim^{\mathrm{ind}} \mathcal{N}(0, \sigma_u^2), \quad i = 1, \ldots, M 
+$$
+
+where $\beta = (\beta_1, \beta_2..., \beta_p)'$ is a vector with the regression coefficients, and $u_i$ are area-specific random effects, also assumed to be independent and identically distributed (IID).
+
+Although the basic Fay-Herriot model assumes the area-specific effects are independent, and identically distributed, we observe that this assumption, many times, does not hold. Often, we see that the values of our target variable in one domain are significantly correlated to those of other areas nearby. The error term in our model then becomes:
+
+$$
+u = \rho_1 Wu + \epsilon; \quad \epsilon \sim \mathcal{N}(0_i, \sigma_I^2 I_i)
+$$ where $I_i$ is the identity matrix for the domains, and $0_i$ is a vector of zeros of the size of the total domains. Additionally, $\rho_1 \in (-1,1)$ is an autoregression parameter and $W$ is and adjacency matrix.
+
+### Intercept-only model
+
+The most basic area-level model is the intercept-only model. This model estimates a common mean for all estimates, but allows each of them to deviate from it based on an area-level random effect. The Fay-Herriot model "shrinks" those unreliable direct estimates –those with high variance– towards the global mean, producing more reliable estimates that borrow strength from other areas.
+
+We model the direct survey estimate $\hat{Y}_i$ for each area $i$ as:
+
+$$
+\hat{Y}_i = \beta_0 + u_i + e_i
+$$
+
+Where:
+
+\- $\hat{Y}_i$ is the direct survey estimate for area $i$
+
+\- $\beta_0$ is the overall intercept (global mean)
+
+\- $u_i \sim N(0, \sigma_u^2)$ area-specific random effect
+
+\- $e_i \sim N(0, D_i)$ is the sampling error, with known variance $D_i$ from the survey.
+
+This linear mixed model includes the fixed term $\beta_0$ which estimates the common mean, and the random part $u_i$ and $e_i$ that accounts for the area specific variation, and the variation due to the sampling error.
+
+In `SUMMER`, the area-level model is calculated using the `smoothArea()` function.
+
+```{r}
+# Total population
+domsize <- eusilcA_pop %>%
+  mutate(district = as.character(district)) %>%
+  group_by(district) %>%
+  count(name = "size") %>%
+  arrange(district)
+
+# Scale the variable
+eusilcA_smp2 <- eusilcA_smp
+sd1 <- sd(eusilcA_smp2$eqIncome)
+eusilcA_smp2$eqIncome <- eusilcA_smp2$eqIncome / sd1
+
+# Produce direct estimate with re-scaled data
+dir_est <- sae::direct(
+  y = eusilcA_smp2$eqIncome,
+  dom = eusilcA_smp2$district,
+  sweight = eusilcA_smp2$weight,
+  domsize = domsize_smp,
+  replace = FALSE
+) %>% 
+  mutate(Var = SD^2) %>% 
+  dplyr::select(Domain, Direct, Var)
+
+# Fit area-level intercept-only model
+fit <- smoothArea(
+  formula = eqIncome ~ 1, # Intercept only
+  domain = ~district,     # Domain of interest 
+  direct.est = dir_est,   # Pre-computed direct estimator
+  X.domain = domsize      # Add a matrix with all (even out-of-sample) domains
+)
+
+# Format results (un-scale them)
+area_level_intercept <- fit$iid.model.est %>%
+  mutate(
+    mean   = mean * sd1,
+    median = median * sd1,
+    lower  = lower * sd1,
+    upper  = upper * sd1,
+    var    = var * sd1^2,
+    se     = sqrt(var)
+  )
+
+# See results
+head(area_level_intercept)
+```
+
+### Fay-Herriot model with auxiliary information
+
+We can estimate a slightly more complex model by adding area-level covariates. The Fay-Herriot model will combine the direct estimates with area-level auxiliary data, in this case, the variables `cash`, `unempl_ben` and `tax_adj`. The model is estimated as follows:
+
+$$
+\hat{Y}_i = \beta_0 + \beta_1 \cdot \text{cash}_i + \beta_2 \cdot \text{unempl\_ben} + \beta_3 \cdot \text{tax\_adj} + u_i + e_i
+$$
+
+
+
+```{r}
+# Produce covariate matrix and scale the values
+# Define covariates
+covariates <- c("cash", "unempl_ben", "tax_adj")
+
+# Extract and scale covariates from eusilcA_popAgg
+Xmat_scaled <- eusilcA_popAgg %>%
+  dplyr::select(district = Domain, all_of(covariates)) %>%
+  mutate(across(all_of(covariates), ~ . / sd(.)))
+
+# Area-level estimate with covariates
+fit <- smoothArea(
+  formula = eqIncome ~ cash + unempl_ben + tax_adj,
+  domain = ~district,
+  direct.est = dir_est,
+  return.samples = T,
+  X.domain = Xmat_scaled
+)
+
+# Un-scale my outputs
+area_level_covariates <- fit$iid.model.est %>%
+  mutate(
+    mean   = mean * sd1,
+    median = median * sd1,
+    lower  = lower * sd1,
+    upper  = upper * sd1,
+    var    = var * sd1^2,
+    se     = sqrt(var)
+  )
+
+# See outputs
+head(area_level_covariates)
+```
+
+### Spatial model
+
+The last iteration for the area-level model involves incorporating the spatial component. This extension of the Fay-Herriot model assumes spatial correlation between areas, assuming that the values of one area will be influenced by the values of the areas around it.
+
+$$
+\boldsymbol{u} = \rho W \boldsymbol{u} + \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 I)
+$$
+
+```{r}
+# Rename the proximity matrix's names and rows
+colnames(eusilcA_prox) <- rownames(eusilcA_prox) <- eusilcA_popAgg$Domain
+
+# Area-level model with spatial effects estimate
+fit <- smoothArea(
+  formula = eqIncome ~ cash + unempl_ben + tax_adj,
+  domain = ~district,
+  direct.est = dir_est,
+  return.samples = T,
+  X.domain = Xmat_scaled,
+  adj.mat = eusilcA_prox   # Add adjacency matrix
+)
+
+# Un-scale my outputs
+area_level_spatial <- fit$bym2.model.est %>%
+  mutate(
+    mean   = mean * sd1,
+    median = median * sd1,
+    lower  = lower * sd1,
+    upper  = upper * sd1,
+    var    = var * sd1^2,
+    se     = sqrt(var)  
+  )
+
+head(area_level_spatial)
+```
+
+### Model comparison
+
+Now that all the area-level models have been estimated, we can compare the results. For all three models, we observe high correlation of the estimates
+
+```{r, message=FALSE, fig.width=10, fig.height=8}
+# Prepare data for model comparison
+area_level_summer_est <- data.frame(
+  Domain = area_level_intercept$domain,
+  Intercept_model_est = area_level_intercept$mean,
+  Covariates_model_est = area_level_covariates$mean,
+  Spatial_model_est = area_level_spatial$mean)
+
+
+area_level_summer_se <- data.frame(
+  Domain = area_level_intercept$domain,
+  Intercept_model_se = area_level_intercept$se,
+  Covariates_model_se = area_level_covariates$se,
+  Spatial_model_se = area_level_spatial$se
+)
+
+# Flag out-of-sample domains
+oos <- setdiff(eusilcA_pop$district,eusilcA_smp$district)
+area_level_summer_est <- area_level_summer_est %>%
+  mutate(sample_status = if_else(Domain %in% oos, "out-of-sample", "in-sample"))
+
+area_level_summer_se <- area_level_summer_se %>%
+  mutate(sample_status = if_else(Domain %in% oos, "out-of-sample", "in-sample"))
+
+# Plot
+ggpairs(
+  data = area_level_summer_est[,-1],
+  aes(color = sample_status)
+) +
+  theme_ipsum()
+
+ggpairs(
+  data = area_level_summer_se[,-1],
+  aes(color = sample_status)
+) +
+  theme_ipsum()
+
+```
+
+We can also map the outputs of the different models. We observe high agreement between the auxiliary data and the spatial model, with very similar estimated values. These results differ from the intercept-only model, where we observe less variability in the outputs.
+
+```{r, message=FALSE, fig.width=8, fig.height=12}
+# Add geometry
+area_level_summer_gdf <- merge(
+  area_level_summer_est,
+  shape_austria_dis[,c("PB")],
+  by.x = "Domain",
+  by.y = "PB"
+) %>% 
+  st_as_sf()
+
+# Make data long
+area_level_long <- area_level_summer_gdf %>%
+  pivot_longer(
+    cols = c(Intercept_model_est, Covariates_model_est, Spatial_model_est),
+    names_to = "Model",
+    values_to = "Estimate"
+  )
+
+# Order the models in increasing complexity
+area_level_long$Model <- factor(area_level_long$Model,
+                                levels = c("Intercept_model_est",
+                                           "Covariates_model_est",
+                                           "Spatial_model_est"))
+
+# Map
+ggplot() +
+  geom_sf(data = area_level_long, aes(fill = Estimate), col = NA) +
+  facet_wrap(~Model, ncol = 1, nrow = 3) +
+  theme_ipsum()
+```
+```{r, fig.width=8, fig.height=12}
+area_level_summer_sd <- data.frame(
+  Domain = area_level_intercept$domain,
+  Intercept_model_sd = sqrt(area_level_intercept$var),
+  Covariates_model_sd = sqrt(area_level_covariates$var),
+  Spatial_model_sd = sqrt(area_level_spatial$var)
+)
+
+# Add geometry
+area_level_summer_gdf <- merge(
+  area_level_summer_sd,
+  shape_austria_dis[,c("PB")],
+  by.x = "Domain",
+  by.y = "PB"
+) %>% 
+  st_as_sf()
+
+# Make data long
+area_level_long_sd <- area_level_summer_gdf %>%
+  pivot_longer(
+    cols = c(Intercept_model_sd, Covariates_model_sd, Spatial_model_sd),
+    names_to = "Model",
+    values_to = "SD"
+  )
+
+# Order the models by increasing complexity
+area_level_long_sd$Model <- factor(area_level_long_sd$Model,
+                                   levels = c("Intercept_model_sd",
+                                              "Covariates_model_sd",
+                                              "Spatial_model_sd"))
+
+# Map SDs
+ggplot() +
+  geom_sf(data = area_level_long_sd, aes(fill = SD), col = NA) +
+  facet_wrap(~Model, ncol = 1, nrow = 3) +
+  labs(title = "Standard Deviation of Estimates by Model") +
+  theme_ipsum()
+```
+
+
+## Unit-level model
+
+The last model we will explore in this practical is the unit-level model. This model incorporates both area and unit-level covariates to improve the performance of our estimator.
+
+The unit-level model works similarly to the area-level model:
+
+-   First, it calculates a direct estimator of the target variable.
+
+-   Next, it fits a model where the direct estimator acts as the dependent variable.
+
+This time, the model incorporates both area- and unit-level errors:
+
+$$
+y_{id} = \mathbf{x}_{id}^\top \boldsymbol{\beta} + u_d + \epsilon_{id}
+$$
+
+where $u_d$ is the area-level error, and $\epsilon_{id}$ is the unit-level error.
+
+Like in the area-level model, the unit-level model can make different assumptions about the area-level error distribution. If we assume they are independent and identically distributed, it will compute an IID, whereas if we suspect there might be spatial autocorrelation, we will calculate the BYM2 model.
+
+For this example, we will assume that the sample data contains no out-of-sample domains. We need to make this assumption because for out-of-sample domains, we do not have access to individual-level data if we want to use the `eusilc` data set.
+
+The function we will use to calculate the unit-level estimates is `smoothUnit()`. This function requires an explicit survey design, an object that describes the way the data was collected in the sample. We obtain this object with the `svydesign()` function. This function allows for both the inclusion of covariates and an adjacency matrix in order to account for spatial effects. In this example, we will calculate the unit-level model with two unit-level covariates.
+
+```{r}
+# Survey design
+eusilcA_smp2$id <- 1:nrow(eusilcA_smp2) # Create id column for sample data
+design <- svydesign(
+  ids = ~id,
+  weights = ~weight,
+  data = eusilcA_smp2
+)
+
+# Unit level covariates
+# Select unit-level covariates
+covariates <- c("self_empl", "tax_adj")
+
+# Then proceed with scaling the covariates
+Xunit_scaled <- eusilcA_smp2 %>%
+  dplyr::select(district = district, all_of(covariates)) %>%
+  mutate(across(all_of(covariates), ~ . / sd(.)))
+
+# Fit model
+fit <- smoothUnit(
+  formula = eqIncome ~ self_empl + tax_adj,
+  domain = ~district,
+  design = design,
+  X.pop = Xunit_scaled,
+  domain.size = domsize
+)
+
+# Estimates
+unit_level <- fit$iid.model.est %>%
+  mutate(
+    mean   = mean * sd1,
+    median = median * sd1,
+    lower  = lower * sd1,
+    upper  = upper * sd1,
+    var    = var * sd1^2,
+    se     = sqrt(var)
+  )
+
+head(unit_level)
+```
+
+
+# Frequentist approach
+
+Now that we have computed our Bayesian small area estimates, we can try using the frequentist approach. In this example, we will be using the functions available through the `sae` package. An important consideration when using this functions is that they do not directly predict the estimates for out-of-sample domains. We have to compute them manually using the estimates provided by our fitted models.
+
+## Area-level Model
+
+### Intercept-only model
+
+```{r}
+# Direct estimator with untransformed data
+dir_est <- sae::direct(
+  y = eusilcA_smp$eqIncome,
+  dom = eusilcA_smp$district,
+  sweight = eusilcA_smp$weight,
+  domsize = domsize_smp,
+  replace = FALSE
+) %>% 
+  mutate(Var = SD^2) %>% 
+  dplyr::select(Domain, Direct, Var)
+
+# Fit intercept-only Fay-Herriot model (no covariates)
+fh <- sae::mseFH(
+  formula = dir_est$Direct ~ 1,
+  vardir = dir_est$Var
+)
+
+# Extract EBLUPs and RMSEs for sampled domains
+fh_df <- data.frame(
+  Domain = dir_est$Domain,
+  Estimate = fh$est$eblup,
+  Estimator_Type = "EBLUP",
+  RMSE = sqrt(fh$mse)
+)
+
+# Extract model intercept and standard error
+intercept <- fh$est$fit$estcoef["X", "beta"]
+se <- fh$est$fit$estcoef["X", "std.error"]
+
+# Identify out-of-sample domains
+oos_domains <- setdiff(eusilcA_popAgg$Domain, dir_est$Domain)
+
+# Create synthetic estimates for OOS domains
+oos_estimates <- data.frame(
+  Domain = oos_domains,
+  Estimate = intercept,
+  Estimator_Type = "Synthetic",
+  RMSE = se
+)
+
+# Combine sampled and out-of-sample estimates
+fh_area_level_intercept <- bind_rows(fh_df, oos_estimates) %>% 
+  arrange(Domain)
+
+head(fh_area_level_intercept)
+```
+
+### Fay-Herriot model with auxiliary variables
+
+```{r}
+# Add more covariates
+X_covar <- merge(dir_est, eusilcA_popAgg[,c("Domain","cash")])
+
+# Fit model with covariates
+fh_cov <- mseFH(
+  formula = Direct ~ cash,
+  vardir = Var,
+  data = X_covar
+)
+
+# Format it as a table
+fh_cov_df <- data.frame(
+  "Domain" = dir_est$Domain,
+  EBLUP = fh_cov$est$eblup,
+  RMSE = sqrt(fh_cov$mse)
+)
+
+# Extract parameter estimates
+intercept <- fh_cov$est$fit$estcoef["X(Intercept)", "beta"]
+slope_cash <- fh_cov$est$fit$estcoef["Xcash", "beta"]
+se_intercept <- fh_cov$est$fit$estcoef["X(Intercept)", "std.error"]
+
+# Prepare covariates for all domains
+X_all <- eusilcA_popAgg[, c("Domain", "cash")]
+
+# Predict synthetic estimate for all areas
+X_all <- X_all %>%
+  mutate(
+    Estimate = intercept + slope_cash * cash
+  )
+
+# Mark sample status
+X_all$in_sample <- X_all$Domain %in% dir_est$Domain
+
+# Add model EBLUPs and RMSEs for in-sample areas
+X_all <- left_join(X_all, fh_cov_df, by = "Domain", suffix = c("_synthetic", "_eblup"))
+
+# Combine estimates
+fh_area_level_covariates <- X_all %>%
+  mutate(
+    Final_Estimate = ifelse(!is.na(EBLUP), EBLUP, Estimate),
+    Estimator_Type = ifelse(!is.na(EBLUP), "EBLUP", "Synthetic"),
+    Final_RMSE = ifelse(!is.na(RMSE), RMSE, se_intercept)
+  ) %>%
+  dplyr::select(Domain, Final_Estimate, Estimator_Type, Final_RMSE) %>% 
+  arrange(Domain)
+
+# See output
+head(fh_area_level_covariates)
+```
+
+### Compare models
+
+```{r, fig.width=10, fig.height=8}
+# Make sure both dfs are in the same order
+identical(fh_area_level_intercept$Domain, fh_area_level_covariates$Domain)
+
+# Create data frame for comparison
+fh_comparison <- data.frame(
+  Domain = fh_area_level_intercept$Domain,
+  Intercept_model_est = fh_area_level_intercept$Estimate,
+  Covariates_model_est = fh_area_level_covariates$Final_Estimate
+)
+
+# Flag out-of-sample domains
+oos <- setdiff(eusilcA_pop$district,eusilcA_smp$district)
+fh_comparison <- fh_comparison %>%
+  mutate(sample_status = if_else(Domain %in% oos, "out-of-sample", "in-sample"))
+
+# Plot
+ggpairs(
+  data = fh_comparison[,-1],
+  aes(color = sample_status)
+) +
+  theme_ipsum()
+```
+
+
+
+
+
+
+

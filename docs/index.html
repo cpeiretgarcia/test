@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Clara Peiret-García">
+<meta name="author" content="Anna Freni Sterrantino">
+<meta name="author" content="Esra Suel">
+<meta name="author" content="Adam Dennett">
+<meta name="author" content="Gerard Casey">
+
+<title>Mapping the Unseen: Small Area Estimation for Urban Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="index_files/libs/clipboard/clipboard.min.js"></script>
+<script src="index_files/libs/quarto-html/quarto.js"></script>
+<script src="index_files/libs/quarto-html/popper.min.js"></script>
+<script src="index_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="index_files/libs/quarto-html/anchor.min.js"></script>
+<link href="index_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="index_files/libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="index_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="index_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="index_files/libs/bootstrap/bootstrap-973236bd072d72a04ee9cd82dcc9cb29.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Mapping the Unseen: Small Area Estimation for Urban Analysis</h1>
+</div>
+
+
+<div class="quarto-title-meta-author">
+  <div class="quarto-title-meta-heading">Authors</div>
+  <div class="quarto-title-meta-heading">Affiliations</div>
+  
+    <div class="quarto-title-meta-contents">
+    <p class="author">Clara Peiret-García <a href="mailto:c.peiret-garcia@ucl.ac.uk" class="quarto-title-author-email"><i class="bi bi-envelope"></i></a> </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Centre for Advanced Spatial Analysis, UCL
+          </p>
+      </div>
+    <div class="quarto-title-meta-contents">
+    <p class="author">Anna Freni Sterrantino </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Alan Turing Institute | Imperial College London
+          </p>
+      </div>
+    <div class="quarto-title-meta-contents">
+    <p class="author">Esra Suel </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Centre for Advanced Spatial Analysis, UCL
+          </p>
+      </div>
+    <div class="quarto-title-meta-contents">
+    <p class="author">Adam Dennett </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Centre for Advanced Spatial Analysis, UCL
+          </p>
+      </div>
+    <div class="quarto-title-meta-contents">
+    <p class="author">Gerard Casey </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Arup | Centre for Advanced Spatial Analysis, UCL
+          </p>
+      </div>
+  </div>
+
+<div class="quarto-title-meta">
+
+      
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Please, make sure you have <code>R version 4.5.1 (2025-06-13)</code> installed in your laptop. You can download it from here: <a href="https://cran.r-project.org/" class="uri">https://cran.r-project.org/</a></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install required packages if not already installed</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>required_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"sae"</span>, <span class="st">"emdi"</span>, <span class="st">"saeTrafo"</span>, <span class="st">"hbsae"</span>, <span class="st">"SUMMER"</span>, <span class="st">"survey"</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"dplyr"</span>, <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"sf"</span>, </span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggplot2"</span>, <span class="st">"hrbrthemes"</span>, <span class="st">"GGally"</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>to_install <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(required_packages, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>()))</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(to_install) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(to_install)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">isTRUE</span>(<span class="fu">requireNamespace</span>(<span class="st">"INLA"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>))) {</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(<span class="st">"INLA"</span>, <span class="at">repos=</span><span class="fu">c</span>(<span class="fu">getOption</span>(<span class="st">"repos"</span>), </span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>                  <span class="at">INLA=</span><span class="st">"https://inla.r-inla-download.org/R/stable"</span>), <span class="at">dep=</span><span class="cn">TRUE</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sae)          <span class="co"># Small area estimation models</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(emdi)         <span class="co"># Example datasets</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(saeTrafo)     <span class="co"># For domain sizes</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SUMMER)       <span class="co"># Bayesian SAE</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(survey)       <span class="co"># Survey designs</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)        <span class="co"># For data wrangling</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)        <span class="co"># For data wrangling</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(purrr)        <span class="co"># For data wrangling</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)           <span class="co"># For mapping</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)      <span class="co"># For visualisations</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(hrbrthemes)   <span class="co"># For visualisations</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(GGally)       <span class="co"># For visualisations</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>In this practical we will put into practice the concepts we learnt on the theoretical session of the workshop. Using survey data, we will calculate direct and model-based income estimators. We will explore the different alternatives available when implementing these methods, which will help us choose the most adequate option given data availability. To better understand the implications of using different models, we will compare the results of the estimates generated through different methods. You can access the <code>.qmd</code> document for this practical from <a href="https://github.com/cpeiretgarcia/SAE_workshop_CUPUM/blob/main/practical.qmd">this link</a>.</p>
+</section>
+<section id="data" class="level1">
+<h1>Data</h1>
+<p>For this workshop we will be using the European Union Statistics on Income and Living Conditions (EU-SILC). Specifically, we will be using the Austrian EU-SILC data sets available through the <code>emdi</code> package. EU-SILC provides detailed information on attributes related to income, material deprivation, labour, housing, childcare, health, access to and use of services, and education.</p>
+<p>From the package <code>emdi</code> we can load a set of data related to the EU-SILC survey. <code>eusilcA_smp</code> is the random independent sample, where each row represents one individuas, and each column represents a unit-level attribute. In total, the sample comprises 1,945 individuals. <code>eusilcA_popAgg</code> comprises the area-level covariates for all domains. <code>eusilcA_pop</code> is the total population – it comprises 25,000 observations which we will assume add up to the total population of Austria for this example. Finally, <code>eusilcA_prox</code> is the adjacency matrix for every district in Austria.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"eusilcA_smp"</span>)     <span class="co"># Random independent Sample</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"eusilcA_popAgg"</span>)  <span class="co"># Aggregated covariates at district level</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"eusilcA_pop"</span>)     <span class="co"># Population level data</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"eusilcA_prox"</span>)    <span class="co"># Adjacency matrix</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Recode the domain variable as character</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>eusilcA_smp<span class="sc">$</span>district <span class="ot">&lt;-</span> <span class="fu">droplevels</span>(eusilcA_smp<span class="sc">$</span>district)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>eusilcA_smp<span class="sc">$</span>district <span class="ot">&lt;-</span> <span class="fu">as.character</span>(eusilcA_smp<span class="sc">$</span>district)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let us start by having a look at the sample data <code>eusilcA_smp</code>. Each row in the sample represents one individual, and for each of them we have information on a wide range of economic and demographic attributes. In this practical, our <strong>target variable</strong> will be the the equivalised household income (<code>eqIncome</code>), which represents the household income adjusted by household composition characteristics.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(eusilcA_smp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    eqIncome gender eqsize     cash self_empl unempl_ben age_ben surv_ben
+213 23485.32   male    2.5 33003.39      0.00          0       0        0
+194 22704.46   male    2.0 20073.23      0.00          0       0        0
+258 25946.34 female    1.0     0.00  24736.06          0       0        0
+460 16152.54   male    2.1 19972.35      0.00          0       0        0
+798 22587.48   male    1.5 21503.23      0.00          0       0        0
+447 20437.04   male    2.0 22282.23      0.00          0       0        0
+    sick_ben dis_ben rent fam_allow house_allow  cap_inv   tax_adj      state
+213        0       0    0      0.00        0.00 17158.84 -10972.65 Burgenland
+194        0       0    0      0.00        0.00     4.70   -940.77 Burgenland
+258        0       0    0      0.00     1083.95   126.33      0.00 Burgenland
+460        0       0    0   5247.33        0.00   195.32      0.00 Burgenland
+798        0       0    0   2031.03        0.00    19.92      0.00 Burgenland
+447        0       0    0      0.00     3312.42     0.00      0.00 Burgenland
+           district weight
+213 Neusiedl am See 9.6875
+194 Neusiedl am See 9.6875
+258 Neusiedl am See 9.6875
+460 Neusiedl am See 9.6875
+798 Neusiedl am See 9.6875
+447 Neusiedl am See 9.6875</code></pre>
+</div>
+</div>
+<p>We can also have a look at the spatial distribution of the observations in the sample.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load geospatial data and set CRS</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">load_shapeaustria</span>()</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>shape_austria_dis <span class="ot">&lt;-</span> <span class="fu">st_set_crs</span>(shape_austria_dis, <span class="dv">4326</span>) <span class="co"># Set CRS</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Map observations per district</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>n_sample <span class="ot">&lt;-</span> shape_austria_dis <span class="sc">%&gt;%</span> <span class="fu">bind_cols</span>(<span class="at">n =</span> eusilcA_smpAgg[,<span class="fu">c</span>(<span class="st">"n"</span>)])</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> n_sample, <span class="fu">aes</span>(<span class="at">fill =</span> n), <span class="at">col =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_b</span>() <span class="sc">+</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Number of observations per district"</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_void</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We see that the observations are unequally distributed across the different districts. Furthermore, we have 24 districts that are not represented in the sample:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check if all districts in the population are in the sample</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(eusilcA_popAgg<span class="sc">$</span>Domain <span class="sc">%in%</span> <span class="fu">unique</span>(eusilcA_smp<span class="sc">$</span>district))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+FALSE  TRUE 
+   24    70 </code></pre>
+</div>
+</div>
+<p>This is a relevant fact, since it will significantly affect the results and even the implementation of some SAE methods –remember that direct methods only generate outputs for areas with sampled observations.</p>
+<p>Our target variable <code>eqIncome</code> follows a skewed distribution, with majority of individuals concentrated around lower income values (€ 20,000). We see very high agreement between sample values and population values.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="at">data =</span> eusilcA_smp, <span class="fu">aes</span>(<span class="at">x =</span> eqIncome, <span class="at">color =</span> <span class="st">"Sample"</span>, <span class="at">linetype =</span> <span class="st">"Sample"</span>), <span class="at">lwd =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="at">data =</span> eusilcA_pop, <span class="fu">aes</span>(<span class="at">x =</span> eqIncome, <span class="at">color =</span> <span class="st">"Population"</span>, <span class="at">linetype =</span> <span class="st">"Population"</span>), <span class="at">lwd =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_linetype_manual</span>(<span class="at">name =</span> <span class="st">""</span>, <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Population"</span> <span class="ot">=</span> <span class="st">"dashed"</span>, <span class="st">"Sample"</span> <span class="ot">=</span> <span class="st">"solid"</span>)) <span class="sc">+</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">name =</span> <span class="st">""</span>, <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Population"</span> <span class="ot">=</span> <span class="st">"#ca6702"</span>, <span class="st">"Sample"</span> <span class="ot">=</span> <span class="st">"#69b3a2"</span>)) <span class="sc">+</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Equivalised income distribution"</span>,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"eqIncome"</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"density"</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_ipsum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Now that we have a better understanding of the data, we can start calculating our estimators.</p>
+</section>
+<section id="direct-estimator" class="level1">
+<h1>Direct estimator</h1>
+<p>We will start by computing the most simple SAE estimator – the direct estimator. Direct estimators use only information collected from the domain of interest. They are relatively simple to obtain, since they use the sample weights and population values. However, they are very sensitive to small sample sizes.</p>
+<p>We will calculate the direct estimator using the <code>sae</code> package. The <code>direct()</code> function computes the Horvitz-Thompson estimator of domain means using this formula:</p>
+<p><span class="math display">\[
+\hat{\bar{Y_d}} = \frac{1}{N_d} \sum_{i \in s_d} w_{di}Y_{di}
+\]</span></p>
+<p>where <span class="math inline">\(N_d\)</span> is the population at the domain of interest <span class="math inline">\(d\)</span>; <span class="math inline">\(s_d\)</span> is the set of sampled observations in domain <span class="math inline">\(d\)</span>; <span class="math inline">\(w_{di}\)</span> is the sample weight for unit <span class="math inline">\(i\)</span> in domain <span class="math inline">\(d\)</span>; and <span class="math inline">\(Y_{di}\)</span> is the observation of the target variable for unit <span class="math inline">\(i\)</span> in domain <span class="math inline">\(d\)</span>, for all <span class="math inline">\(i\)</span> in <span class="math inline">\(S_d\)</span>. In addition to the direct estimator of the mean, the <code>direct()</code> function also gives us the standard deviation and coefficient of variation for each domain.</p>
+<p>From our survey, we know that the <code>weights</code> column represent the survey weights, and that sampling was done without replacement. This information can usually be found in the documentation of the survey, together with any clusters or strata that might have been defined by the surveyors. Additionally, we need the total population sizes for each domain in the sample.</p>
+<ul>
+<li>Scenario A: We have access for both sampling weights and domain sizes, and from the survey design we know that sampling was performed without replacement. In this case, the direct estimator is calculated as follows:</li>
+</ul>
+<p><span class="math display">\[
+\hat{\bar{Y_d}}^{dir} = \frac{1}{N_d} \sum_{i \in s_d} w_{di}y_{di}
+\]</span> - <span class="math inline">\(\hat{\bar{Y_d}}^{dir}\)</span> is the direct estimator of the variable of interest. - <span class="math inline">\(s_d\)</span> is the sample in domain <span class="math inline">\(d\)</span>. - <span class="math inline">\(y_i\)</span> is the value of the target variable for observation <span class="math inline">\(i\)</span> in domain <span class="math inline">\(d\)</span>. - <span class="math inline">\(w_{di}\)</span> is the sampling weight of observation <span class="math inline">\(i\)</span>. - <span class="math inline">\(N_d\)</span> is the population at domain <span class="math inline">\(d\)</span>.</p>
+<p>And the variance is computed following this equation:</p>
+<p><span class="math display">\[
+\text{Var}(\hat{Y}_d^{dir}) = \frac{\sum_{i \in s_d} w_i (w_i -1)y_i^2}{N_d^2}
+\]</span></p>
+<ul>
+<li>Scenario B: We have access to domain sizes, but not to the sampling weights, and we know the sampling was performed without replacement. In this case, we will ignore the sampling weights, just the sample size.</li>
+</ul>
+<p><span class="math display">\[
+\hat{Y}_d^{dir} = \frac{1}{n_d} \sum{i \in s_d} y_i
+\]</span></p>
+<p>And the variance is:</p>
+<p><span class="math display">\[
+\text{Var}(\hat{Y}d^{dir}) = \frac{1 - f_d}{n_d} S{d}^2
+\]</span></p>
+<p>Where <span class="math inline">\(f_d = \frac{n_d}{N_d}\)</span> and <span class="math inline">\(S_d^2\)</span> is the sample variance of the domain. Since we are introducing sampling without replacement, the variance of our estimator is reduced, because each time we draw a new sample removes one possibility from the population, slightly reducing the uncertainty for each subsequent draw. The <span class="math inline">\(f_d\)</span> factor ensures the variance is appropriately reduced for large samples relative to the domain size.</p>
+<ul>
+<li>Scenario C: We have access to sample weights, domain sizes, and know the sampling was done with replacement. In this case, the direct estimator is the same as in Scenario 1, since it also accounts for weights and uses domain sizes:</li>
+</ul>
+<p><span class="math display">\[
+\hat{\bar{Y_d}}^{dir} = \frac{1}{N_d} \sum_{i \in s_d} w_{di}y_{di}
+\]</span></p>
+<p>The variance, however, changes, since we do the sampling with replacement:</p>
+<p><span class="math display">\[
+\text{Var}(\hat{Y}d^{dir}) = \frac{1}{n_d} \sum_{i \in s_d} (f_d w_i y_i - \hat{Y}_d^{dir})^2
+\]</span></p>
+<ul>
+<li>Scenario D: we know that sampling was performed with replacement, but have no access to sample weights nor domain sizes. We calculate the estimator in the same way we did with Scenario B.</li>
+</ul>
+<p><span class="math display">\[
+\hat{Y}_d^{dir} = \frac{1}{n_d} \sum{i \in s_d} y_i
+\]</span></p>
+<p>This time, the variance is calculated as follows:</p>
+<p><span class="math display">\[
+\text{Var}(\hat{Y}_d^{dir}) = \frac{S{d}^2}{n_d}
+\]</span></p>
+<p>The scenario of choice will depend on data availability. Let’s calculate the direct estimator assuming we have access to sample weights, domain sizes, and know the sampling was run without replacement.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean and match sample population sizes</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>domsize_smp <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">district =</span> <span class="fu">names</span>(pop_area_size),</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> pop_area_size</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(district <span class="sc">%in%</span> eusilcA_smp<span class="sc">$</span>district)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate direct estimator</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>dir_est_a <span class="ot">&lt;-</span> sae<span class="sc">::</span><span class="fu">direct</span>(</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> eusilcA_smp<span class="sc">$</span>eqIncome,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">dom =</span> eusilcA_smp<span class="sc">$</span>district,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">sweight =</span> eusilcA_smp<span class="sc">$</span>weight,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">domsize =</span> domsize_smp,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">replace =</span> <span class="cn">FALSE</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Format the direct estimator for future use</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>dir_est <span class="ot">&lt;-</span> dir_est_a <span class="sc">%&gt;%</span> </span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Var =</span> SD<span class="sc">^</span><span class="dv">2</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="st">"Domain"</span>,<span class="st">"Direct"</span>,<span class="st">"Var"</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(dir_est)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                Domain   Direct      Var
+3            Amstetten 15201.15  7416518
+4                Baden 22921.69 12705630
+67             Bludenz 12069.59  8740760
+39      Braunau am Inn 12190.10  5263533
+68             Bregenz 35731.20 37019451
+5  Bruck an der Leitha 23753.31 20030207</code></pre>
+</div>
+</div>
+<section id="task-how-would-you-estimate-the-alternative-direct-estimators" class="level3">
+<h3 class="anchored" data-anchor-id="task-how-would-you-estimate-the-alternative-direct-estimators">Task – How would you estimate the alternative direct estimators?</h3>
+<p>Hint: You can use the same formula we used for Scenario A, but changing the parameters that refer to the different alternatives. You can always have a look at what each parameter in the function does, and see some examples by running <code>?sae::direct()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario B -- No replacement, with domain sizes, no weights</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario C -- With replacement, weights and domain sizes</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario D -- With replacement, no weights nor domain sizes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Once we have calculated the direct estimates, we can plot them in a map. We see that there are gaps in our data. This relates to direct estimators only being able to produce estimates based on domain-data only. For domains where sample data has no observations, the direct estimator will not produce an estimate. Additionally, the estimates produced for those areas for which sample sizes are small, will not be accurate.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create data frame</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>dir_est_a_gdf <span class="ot">&lt;-</span> <span class="fu">merge</span>(</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  dir_est, </span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  shape_austria_dis[,<span class="fu">c</span>(<span class="st">"PB"</span>)], </span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">by.x =</span> <span class="st">"Domain"</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">by.y =</span> <span class="st">"PB"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>()</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Map</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> shape_austria_dis) <span class="sc">+</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> dir_est_a_gdf, <span class="fu">aes</span>(<span class="at">fill =</span> Direct)) <span class="sc">+</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Horvitz-Thompson Estimates"</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_ipsum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>We have seen how the direct estimate can produce estimates with minimal information. However, these results can be unreliable when sample sizes are small for our domain of interest, and they cannot be calculated if the domain of interest is not included in the sample. To solve this problem, we rely on model-based small area estimation methods.</p>
+</section>
+</section>
+<section id="model-based-estimators" class="level1">
+<h1>Model-based estimators</h1>
+<p>When samples are too small, or we have no observations for some domains, direct estimators will not provide us with accurate results, and we need to use model-based methods. There are two types of model-based methods – area- and unit-models. Area models incorporate domain-level information to produce more accurate estimates by “borrowing strength” from other areas, and using that information to improve the estimates for our small sample or out of sample areas. Similarly, unit-level models additionally incorporate unit-level auxiliary information to strengthen the estimates.</p>
+<section id="small-area-estimation-in-r" class="level2">
+<h2 class="anchored" data-anchor-id="small-area-estimation-in-r">Small Area Estimation in <code>R</code></h2>
+<p>Before we start calculating our estimates, we will learn a bit more about the available <code>R</code> packages for small area estimation. In this practical we will be using two of the most commonly used packages for small area estimation modelling: <code>sae</code> and <code>SUMMER</code>. Although both packages aim at producing small area estimates in the presence of small sample sizes, they are based on two fundamentally different paradigms.</p>
+<p>The <code>sae</code> package is based on frequentist methods, while <code>SUMMER</code> adopts a Bayesian approach to producing estimates. While in the frequentist approach the model estimates are assumed to be fixed, Bayesian models treat parameters as random variables. The Bayesian framework allows for incorporating prior information that allows for more flexible modelling, particularly in the presence of scarce or highly variable data, as is the case of small area estimation.</p>
+</section>
+<section id="area-level-model" class="level2">
+<h2 class="anchored" data-anchor-id="area-level-model">Area-level model</h2>
+<p>Area-level estimates use domain-level data to improve the performance of direct estimates. The basic area-level model, the Fay-Herriot model, uses a two-step approach to do this: first, the model estimates a direct estimator in what is known as the <em>sampling model</em>. Next, the model computes area-specific random effects in what is known as the <em>linking model</em>.</p>
+<p>The sampling model is formalised as follows:</p>
+<p><span class="math display">\[
+\hat{\theta}_i^{\mathrm{DIR}} = \theta_i + \epsilon_i; \quad \epsilon_i \sim^{\mathrm{ind}} \mathcal{N}(0, V_i), \quad i = 1, \ldots, M
+\]</span></p>
+<p>Where <span class="math inline">\(V_i\)</span> is the sampling variance of the direct estimator <span class="math inline">\(\hat{\theta}_i^{\mathrm{DIR}}\)</span> and <span class="math inline">\(\epsilon_i\)</span> represents the sampling error, which is assumed to be independently distributed.</p>
+<p>The linking model allows us to borrow strength from other areas by assuming the small area parameter <span class="math inline">\(\theta_i\)</span> is related to auxiliary variables <span class="math inline">\(x_i = (x_{i1}, x_{i2}, ..., x_{ip})'\)</span> through a linear regression model given by:</p>
+<p><span class="math display">\[
+\theta_i = x_i' \beta + u_i = \alpha + \beta \bar{x_i}; \quad u_i \sim^{\mathrm{ind}} \mathcal{N}(0, \sigma_u^2), \quad i = 1, \ldots, M
+\]</span></p>
+<p>where <span class="math inline">\(\beta = (\beta_1, \beta_2..., \beta_p)'\)</span> is a vector with the regression coefficients, and <span class="math inline">\(u_i\)</span> are area-specific random effects, also assumed to be independent and identically distributed (IID).</p>
+<p>Although the basic Fay-Herriot model assumes the area-specific effects are independent, and identically distributed, we observe that this assumption, many times, does not hold. Often, we see that the values of our target variable in one domain are significantly correlated to those of other areas nearby. The error term in our model then becomes:</p>
+<p><span class="math display">\[
+u = \rho_1 Wu + \epsilon; \quad \epsilon \sim \mathcal{N}(0_i, \sigma_I^2 I_i)
+\]</span> where <span class="math inline">\(I_i\)</span> is the identity matrix for the domains, and <span class="math inline">\(0_i\)</span> is a vector of zeros of the size of the total domains. Additionally, <span class="math inline">\(\rho_1 \in (-1,1)\)</span> is an autoregression parameter and <span class="math inline">\(W\)</span> is and adjacency matrix.</p>
+<section id="intercept-only-model" class="level3">
+<h3 class="anchored" data-anchor-id="intercept-only-model">Intercept-only model</h3>
+<p>The most basic area-level model is the intercept-only model. This model estimates a common mean for all estimates, but allows each of them to deviate from it based on an area-level random effect. The Fay-Herriot model “shrinks” those unreliable direct estimates –those with high variance– towards the global mean, producing more reliable estimates that borrow strength from other areas.</p>
+<p>We model the direct survey estimate <span class="math inline">\(\hat{Y}_i\)</span> for each area <span class="math inline">\(i\)</span> as:</p>
+<p><span class="math display">\[
+\hat{Y}_i = \beta_0 + u_i + e_i
+\]</span></p>
+<p>Where:</p>
+<p>- <span class="math inline">\(\hat{Y}_i\)</span> is the direct survey estimate for area <span class="math inline">\(i\)</span></p>
+<p>- <span class="math inline">\(\beta_0\)</span> is the overall intercept (global mean)</p>
+<p>- <span class="math inline">\(u_i \sim N(0, \sigma_u^2)\)</span> area-specific random effect</p>
+<p>- <span class="math inline">\(e_i \sim N(0, D_i)\)</span> is the sampling error, with known variance <span class="math inline">\(D_i\)</span> from the survey.</p>
+<p>This linear mixed model includes the fixed term <span class="math inline">\(\beta_0\)</span> which estimates the common mean, and the random part <span class="math inline">\(u_i\)</span> and <span class="math inline">\(e_i\)</span> that accounts for the area specific variation, and the variation due to the sampling error.</p>
+<p>In <code>SUMMER</code>, the area-level model is calculated using the <code>smoothArea()</code> function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Total population</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>domsize <span class="ot">&lt;-</span> eusilcA_pop <span class="sc">%&gt;%</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">district =</span> <span class="fu">as.character</span>(district)) <span class="sc">%&gt;%</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(district) <span class="sc">%&gt;%</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(<span class="at">name =</span> <span class="st">"size"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(district)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Scale the variable</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>eusilcA_smp2 <span class="ot">&lt;-</span> eusilcA_smp</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>sd1 <span class="ot">&lt;-</span> <span class="fu">sd</span>(eusilcA_smp2<span class="sc">$</span>eqIncome)</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>eusilcA_smp2<span class="sc">$</span>eqIncome <span class="ot">&lt;-</span> eusilcA_smp2<span class="sc">$</span>eqIncome <span class="sc">/</span> sd1</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Produce direct estimate with re-scaled data</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>dir_est <span class="ot">&lt;-</span> sae<span class="sc">::</span><span class="fu">direct</span>(</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> eusilcA_smp2<span class="sc">$</span>eqIncome,</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">dom =</span> eusilcA_smp2<span class="sc">$</span>district,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">sweight =</span> eusilcA_smp2<span class="sc">$</span>weight,</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">domsize =</span> domsize_smp,</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">replace =</span> <span class="cn">FALSE</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Var =</span> SD<span class="sc">^</span><span class="dv">2</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(Domain, Direct, Var)</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit area-level intercept-only model</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">smoothArea</span>(</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> eqIncome <span class="sc">~</span> <span class="dv">1</span>, <span class="co"># Intercept only</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">domain =</span> <span class="sc">~</span>district,     <span class="co"># Domain of interest </span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">direct.est =</span> dir_est,   <span class="co"># Pre-computed direct estimator</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">X.domain =</span> domsize      <span class="co"># Add a matrix with all (even out-of-sample) domains</span></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>There are domains in X.domain not in design/direct estimates. 
+Generating estimates for all domains in X.domain.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in smoothArea(formula = eqIncome ~ 1, domain = ~district, direct.est =
+dir_est, :</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Format results (un-scale them)</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>area_level_intercept <span class="ot">&lt;-</span> fit<span class="sc">$</span>iid.model.est <span class="sc">%&gt;%</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean   =</span> mean <span class="sc">*</span> sd1,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">median =</span> median <span class="sc">*</span> sd1,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">lower  =</span> lower <span class="sc">*</span> sd1,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">upper  =</span> upper <span class="sc">*</span> sd1,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">var    =</span> var <span class="sc">*</span> sd1<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">se     =</span> <span class="fu">sqrt</span>(var)</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="co"># See results</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(area_level_intercept)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               domain     mean   median     var    lower    upper
+1           Amstetten 15958.59 15973.11 4045706 11865.63 19469.93
+2               Baden 20112.49 20003.81 5737457 16018.40 24556.59
+3             Bludenz 14445.23 14493.42 4625062 10099.05 18285.40
+4      Braunau am Inn 13985.73 14061.40 3622852 10318.77 17534.38
+5             Bregenz 21728.01 21539.99 9747280 16506.97 27972.88
+6 Bruck an der Leitha 19969.22 19569.37 8027025 14978.12 25702.63
+                 method       se
+1 Area level model: IID 2011.394
+2 Area level model: IID 2395.299
+3 Area level model: IID 2150.596
+4 Area level model: IID 1903.379
+5 Area level model: IID 3122.063
+6 Area level model: IID 2833.200</code></pre>
+</div>
+</div>
+</section>
+<section id="fay-herriot-model-with-auxiliary-information" class="level3">
+<h3 class="anchored" data-anchor-id="fay-herriot-model-with-auxiliary-information">Fay-Herriot model with auxiliary information</h3>
+<p>We can estimate a slightly more complex model by adding area-level covariates. The Fay-Herriot model will combine the direct estimates with area-level auxiliary data, in this case, the variables <code>cash</code>, <code>unempl_ben</code> and <code>tax_adj</code>. The model is estimated as follows:</p>
+<p><span class="math display">\[
+\hat{Y}_i = \beta_0 + \beta_1 \cdot \text{cash}_i + \beta_2 \cdot \text{unempl\_ben} + \beta_3 \cdot \text{tax\_adj} + u_i + e_i
+\]</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Produce covariate matrix and scale the values</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Define covariates</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>covariates <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"cash"</span>, <span class="st">"unempl_ben"</span>, <span class="st">"tax_adj"</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract and scale covariates from eusilcA_popAgg</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>Xmat_scaled <span class="ot">&lt;-</span> eusilcA_popAgg <span class="sc">%&gt;%</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="at">district =</span> Domain, <span class="fu">all_of</span>(covariates)) <span class="sc">%&gt;%</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">all_of</span>(covariates), <span class="sc">~</span> . <span class="sc">/</span> <span class="fu">sd</span>(.)))</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Area-level estimate with covariates</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">smoothArea</span>(</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> eqIncome <span class="sc">~</span> cash <span class="sc">+</span> unempl_ben <span class="sc">+</span> tax_adj,</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">domain =</span> <span class="sc">~</span>district,</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">direct.est =</span> dir_est,</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">return.samples =</span> T,</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">X.domain =</span> Xmat_scaled</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>There are domains in X.domain not in design/direct estimates. 
+Generating estimates for all domains in X.domain.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in smoothArea(formula = eqIncome ~ cash + unempl_ben + tax_adj, :</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Un-scale my outputs</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>area_level_covariates <span class="ot">&lt;-</span> fit<span class="sc">$</span>iid.model.est <span class="sc">%&gt;%</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean   =</span> mean <span class="sc">*</span> sd1,</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">median =</span> median <span class="sc">*</span> sd1,</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">lower  =</span> lower <span class="sc">*</span> sd1,</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">upper  =</span> upper <span class="sc">*</span> sd1,</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">var    =</span> var <span class="sc">*</span> sd1<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">se     =</span> <span class="fu">sqrt</span>(var)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="co"># See outputs</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(area_level_covariates)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               domain     mean   median       var    lower    upper
+1           Amstetten 13000.22 13024.42  897980.1 11255.25 14662.69
+2               Baden 20207.76 20206.77  957209.8 18189.13 22090.35
+3             Bludenz 12539.00 12490.45 1193680.4 10413.55 14389.35
+4      Braunau am Inn 12148.09 12155.99  709674.1 10422.70 13612.64
+5             Bregenz 30879.98 31006.56 2613576.2 27596.55 33963.90
+6 Bruck an der Leitha 22293.55 22268.43 1652695.9 19965.73 24658.08
+                 method        se
+1 Area level model: IID  947.6181
+2 Area level model: IID  978.3710
+3 Area level model: IID 1092.5568
+4 Area level model: IID  842.4216
+5 Area level model: IID 1616.6559
+6 Area level model: IID 1285.5722</code></pre>
+</div>
+</div>
+</section>
+<section id="spatial-model" class="level3">
+<h3 class="anchored" data-anchor-id="spatial-model">Spatial model</h3>
+<p>The last iteration for the area-level model involves incorporating the spatial component. This extension of the Fay-Herriot model assumes spatial correlation between areas, assuming that the values of one area will be influenced by the values of the areas around it.</p>
+<p><span class="math display">\[
+\boldsymbol{u} = \rho W \boldsymbol{u} + \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 I)
+\]</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Rename the proximity matrix's names and rows</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(eusilcA_prox) <span class="ot">&lt;-</span> <span class="fu">rownames</span>(eusilcA_prox) <span class="ot">&lt;-</span> eusilcA_popAgg<span class="sc">$</span>Domain</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Area-level model with spatial effects estimate</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">smoothArea</span>(</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> eqIncome <span class="sc">~</span> cash <span class="sc">+</span> unempl_ben <span class="sc">+</span> tax_adj,</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">domain =</span> <span class="sc">~</span>district,</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">direct.est =</span> dir_est,</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">return.samples =</span> T,</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">X.domain =</span> Xmat_scaled,</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">adj.mat =</span> eusilcA_prox   <span class="co"># Add adjacency matrix</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>There are domains in X.domain not in design/direct estimates. 
+Generating estimates for all domains in X.domain.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in smoothArea(formula = eqIncome ~ cash + unempl_ben + tax_adj, :</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Un-scale my outputs</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>area_level_spatial <span class="ot">&lt;-</span> fit<span class="sc">$</span>bym2.model.est <span class="sc">%&gt;%</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean   =</span> mean <span class="sc">*</span> sd1,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">median =</span> median <span class="sc">*</span> sd1,</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">lower  =</span> lower <span class="sc">*</span> sd1,</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">upper  =</span> upper <span class="sc">*</span> sd1,</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">var    =</span> var <span class="sc">*</span> sd1<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">se     =</span> <span class="fu">sqrt</span>(var)  </span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(area_level_spatial)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               domain     mean   median       var     lower    upper
+1           Amstetten 13046.44 12994.11  880133.9 11286.577 14861.68
+2               Baden 20257.17 20213.24  902048.9 18571.121 21918.56
+3             Bludenz 12464.06 12569.03 1360543.3  9905.172 14390.63
+4      Braunau am Inn 12212.37 12184.97  836177.9 10277.877 14017.10
+5             Bregenz 30559.22 30593.65 3785877.9 26741.062 34344.07
+6 Bruck an der Leitha 22434.83 22492.23 1680808.4 19871.299 25023.89
+                  method        se
+1 Area level model: BYM2  938.1545
+2 Area level model: BYM2  949.7626
+3 Area level model: BYM2 1166.4233
+4 Area level model: BYM2  914.4276
+5 Area level model: BYM2 1945.7333
+6 Area level model: BYM2 1296.4600</code></pre>
+</div>
+</div>
+</section>
+<section id="model-comparison" class="level3">
+<h3 class="anchored" data-anchor-id="model-comparison">Model comparison</h3>
+<p>Now that all the area-level models have been estimated, we can compare the results. For all three models, we observe high correlation of the estimates</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare data for model comparison</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>area_level_summer_est <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Domain =</span> area_level_intercept<span class="sc">$</span>domain,</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Intercept_model_est =</span> area_level_intercept<span class="sc">$</span>mean,</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Covariates_model_est =</span> area_level_covariates<span class="sc">$</span>mean,</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Spatial_model_est =</span> area_level_spatial<span class="sc">$</span>mean)</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>area_level_summer_se <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">Domain =</span> area_level_intercept<span class="sc">$</span>domain,</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">Intercept_model_se =</span> area_level_intercept<span class="sc">$</span>se,</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">Covariates_model_se =</span> area_level_covariates<span class="sc">$</span>se,</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">Spatial_model_se =</span> area_level_spatial<span class="sc">$</span>se</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Flag out-of-sample domains</span></span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a>oos <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(eusilcA_pop<span class="sc">$</span>district,eusilcA_smp<span class="sc">$</span>district)</span>
+<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a>area_level_summer_est <span class="ot">&lt;-</span> area_level_summer_est <span class="sc">%&gt;%</span></span>
+<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sample_status =</span> <span class="fu">if_else</span>(Domain <span class="sc">%in%</span> oos, <span class="st">"out-of-sample"</span>, <span class="st">"in-sample"</span>))</span>
+<span id="cb29-20"><a href="#cb29-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-21"><a href="#cb29-21" aria-hidden="true" tabindex="-1"></a>area_level_summer_se <span class="ot">&lt;-</span> area_level_summer_se <span class="sc">%&gt;%</span></span>
+<span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sample_status =</span> <span class="fu">if_else</span>(Domain <span class="sc">%in%</span> oos, <span class="st">"out-of-sample"</span>, <span class="st">"in-sample"</span>))</span>
+<span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-24"><a href="#cb29-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot</span></span>
+<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggpairs</span>(</span>
+<span id="cb29-26"><a href="#cb29-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> area_level_summer_est[,<span class="sc">-</span><span class="dv">1</span>],</span>
+<span id="cb29-27"><a href="#cb29-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">color =</span> sample_status)</span>
+<span id="cb29-28"><a href="#cb29-28" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb29-29"><a href="#cb29-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_ipsum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggpairs</span>(</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> area_level_summer_se[,<span class="sc">-</span><span class="dv">1</span>],</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">color =</span> sample_status)</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_ipsum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-14-2.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can also map the outputs of the different models. We observe high agreement between the auxiliary data and the spatial model, with very similar estimated values. These results differ from the intercept-only model, where we observe less variability in the outputs.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Add geometry</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>area_level_summer_gdf <span class="ot">&lt;-</span> <span class="fu">merge</span>(</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  area_level_summer_est,</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  shape_austria_dis[,<span class="fu">c</span>(<span class="st">"PB"</span>)],</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">by.x =</span> <span class="st">"Domain"</span>,</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">by.y =</span> <span class="st">"PB"</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> </span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>()</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Make data long</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>area_level_long <span class="ot">&lt;-</span> area_level_summer_gdf <span class="sc">%&gt;%</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">cols =</span> <span class="fu">c</span>(Intercept_model_est, Covariates_model_est, Spatial_model_est),</span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="st">"Model"</span>,</span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">"Estimate"</span></span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Order the models in increasing complexity</span></span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>area_level_long<span class="sc">$</span>Model <span class="ot">&lt;-</span> <span class="fu">factor</span>(area_level_long<span class="sc">$</span>Model,</span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>                                <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Intercept_model_est"</span>,</span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>                                           <span class="st">"Covariates_model_est"</span>,</span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>                                           <span class="st">"Spatial_model_est"</span>))</span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Map</span></span>
+<span id="cb31-25"><a href="#cb31-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb31-26"><a href="#cb31-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> area_level_long, <span class="fu">aes</span>(<span class="at">fill =</span> Estimate), <span class="at">col =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb31-27"><a href="#cb31-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>Model, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">nrow =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb31-28"><a href="#cb31-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_ipsum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>area_level_summer_sd <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Domain =</span> area_level_intercept<span class="sc">$</span>domain,</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Intercept_model_sd =</span> <span class="fu">sqrt</span>(area_level_intercept<span class="sc">$</span>var),</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Covariates_model_sd =</span> <span class="fu">sqrt</span>(area_level_covariates<span class="sc">$</span>var),</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Spatial_model_sd =</span> <span class="fu">sqrt</span>(area_level_spatial<span class="sc">$</span>var)</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Add geometry</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>area_level_summer_gdf <span class="ot">&lt;-</span> <span class="fu">merge</span>(</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>  area_level_summer_sd,</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>  shape_austria_dis[,<span class="fu">c</span>(<span class="st">"PB"</span>)],</span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">by.x =</span> <span class="st">"Domain"</span>,</span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">by.y =</span> <span class="st">"PB"</span></span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> </span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>()</span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Make data long</span></span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a>area_level_long_sd <span class="ot">&lt;-</span> area_level_summer_gdf <span class="sc">%&gt;%</span></span>
+<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
+<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">cols =</span> <span class="fu">c</span>(Intercept_model_sd, Covariates_model_sd, Spatial_model_sd),</span>
+<span id="cb32-21"><a href="#cb32-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="st">"Model"</span>,</span>
+<span id="cb32-22"><a href="#cb32-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">"SD"</span></span>
+<span id="cb32-23"><a href="#cb32-23" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb32-24"><a href="#cb32-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-25"><a href="#cb32-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Order the models by increasing complexity</span></span>
+<span id="cb32-26"><a href="#cb32-26" aria-hidden="true" tabindex="-1"></a>area_level_long_sd<span class="sc">$</span>Model <span class="ot">&lt;-</span> <span class="fu">factor</span>(area_level_long_sd<span class="sc">$</span>Model,</span>
+<span id="cb32-27"><a href="#cb32-27" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Intercept_model_sd"</span>,</span>
+<span id="cb32-28"><a href="#cb32-28" aria-hidden="true" tabindex="-1"></a>                                              <span class="st">"Covariates_model_sd"</span>,</span>
+<span id="cb32-29"><a href="#cb32-29" aria-hidden="true" tabindex="-1"></a>                                              <span class="st">"Spatial_model_sd"</span>))</span>
+<span id="cb32-30"><a href="#cb32-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-31"><a href="#cb32-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Map SDs</span></span>
+<span id="cb32-32"><a href="#cb32-32" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb32-33"><a href="#cb32-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> area_level_long_sd, <span class="fu">aes</span>(<span class="at">fill =</span> SD), <span class="at">col =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb32-34"><a href="#cb32-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>Model, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">nrow =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb32-35"><a href="#cb32-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Standard Deviation of Estimates by Model"</span>) <span class="sc">+</span></span>
+<span id="cb32-36"><a href="#cb32-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_ipsum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="unit-level-model" class="level2">
+<h2 class="anchored" data-anchor-id="unit-level-model">Unit-level model</h2>
+<p>The last model we will explore in this practical is the unit-level model. This model incorporates both area and unit-level covariates to improve the performance of our estimator.</p>
+<p>The unit-level model works similarly to the area-level model:</p>
+<ul>
+<li><p>First, it calculates a direct estimator of the target variable.</p></li>
+<li><p>Next, it fits a model where the direct estimator acts as the dependent variable.</p></li>
+</ul>
+<p>This time, the model incorporates both area- and unit-level errors:</p>
+<p><span class="math display">\[
+y_{id} = \mathbf{x}_{id}^\top \boldsymbol{\beta} + u_d + \epsilon_{id}
+\]</span></p>
+<p>where <span class="math inline">\(u_d\)</span> is the area-level error, and <span class="math inline">\(\epsilon_{id}\)</span> is the unit-level error.</p>
+<p>Like in the area-level model, the unit-level model can make different assumptions about the area-level error distribution. If we assume they are independent and identically distributed, it will compute an IID, whereas if we suspect there might be spatial autocorrelation, we will calculate the BYM2 model.</p>
+<p>For this example, we will assume that the sample data contains no out-of-sample domains. We need to make this assumption because for out-of-sample domains, we do not have access to individual-level data if we want to use the <code>eusilc</code> data set.</p>
+<p>The function we will use to calculate the unit-level estimates is <code>smoothUnit()</code>. This function requires an explicit survey design, an object that describes the way the data was collected in the sample. We obtain this object with the <code>svydesign()</code> function. This function allows for both the inclusion of covariates and an adjacency matrix in order to account for spatial effects. In this example, we will calculate the unit-level model with two unit-level covariates.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Survey design</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>eusilcA_smp2<span class="sc">$</span>id <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(eusilcA_smp2) <span class="co"># Create id column for sample data</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>design <span class="ot">&lt;-</span> <span class="fu">svydesign</span>(</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">ids =</span> <span class="sc">~</span>id,</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">weights =</span> <span class="sc">~</span>weight,</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> eusilcA_smp2</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Unit level covariates</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Select unit-level covariates</span></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>covariates <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"self_empl"</span>, <span class="st">"tax_adj"</span>)</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Then proceed with scaling the covariates</span></span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>Xunit_scaled <span class="ot">&lt;-</span> eusilcA_smp2 <span class="sc">%&gt;%</span></span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="at">district =</span> district, <span class="fu">all_of</span>(covariates)) <span class="sc">%&gt;%</span></span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">all_of</span>(covariates), <span class="sc">~</span> . <span class="sc">/</span> <span class="fu">sd</span>(.)))</span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit model</span></span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">smoothUnit</span>(</span>
+<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> eqIncome <span class="sc">~</span> self_empl <span class="sc">+</span> tax_adj,</span>
+<span id="cb33-21"><a href="#cb33-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">domain =</span> <span class="sc">~</span>district,</span>
+<span id="cb33-22"><a href="#cb33-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">design =</span> design,</span>
+<span id="cb33-23"><a href="#cb33-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">X.pop =</span> Xunit_scaled,</span>
+<span id="cb33-24"><a href="#cb33-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">domain.size =</span> domsize</span>
+<span id="cb33-25"><a href="#cb33-25" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in smoothUnit(formula = eqIncome ~ self_empl + tax_adj, domain =
+~district, : No spatial information provided, using iid domain effects</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimates</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>unit_level <span class="ot">&lt;-</span> fit<span class="sc">$</span>iid.model.est <span class="sc">%&gt;%</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean   =</span> mean <span class="sc">*</span> sd1,</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">median =</span> median <span class="sc">*</span> sd1,</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">lower  =</span> lower <span class="sc">*</span> sd1,</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">upper  =</span> upper <span class="sc">*</span> sd1,</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">var    =</span> var <span class="sc">*</span> sd1<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">se     =</span> <span class="fu">sqrt</span>(var)</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(unit_level)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                domain     mean   median     var     lower    upper
+3            Amstetten 14783.30 14740.68 1909035 11958.925 17449.15
+4                Baden 22322.08 22333.54 1706909 19955.355 24775.30
+67             Bludenz 12363.51 12325.40 3382785  8848.686 15853.83
+39      Braunau am Inn 12138.39 12229.65 2143186  9350.874 15056.62
+68             Bregenz 34973.66 35067.99 2058260 32154.152 37769.58
+5  Bruck an der Leitha 22319.25 22399.21 2277440 19340.347 25171.52
+                  method       se
+3  Unit level model: IID 1381.678
+4  Unit level model: IID 1306.487
+67 Unit level model: IID 1839.235
+39 Unit level model: IID 1463.963
+68 Unit level model: IID 1434.664
+5  Unit level model: IID 1509.119</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="frequentist-approach" class="level1">
+<h1>Frequentist approach</h1>
+<p>Now that we have computed our Bayesian small area estimates, we can try using the frequentist approach. In this example, we will be using the functions available through the <code>sae</code> package. An important consideration when using this functions is that they do not directly predict the estimates for out-of-sample domains. We have to compute them manually using the estimates provided by our fitted models.</p>
+<section id="area-level-model-1" class="level2">
+<h2 class="anchored" data-anchor-id="area-level-model-1">Area-level Model</h2>
+<section id="intercept-only-model-1" class="level3">
+<h3 class="anchored" data-anchor-id="intercept-only-model-1">Intercept-only model</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Direct estimator with untransformed data</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>dir_est <span class="ot">&lt;-</span> sae<span class="sc">::</span><span class="fu">direct</span>(</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> eusilcA_smp<span class="sc">$</span>eqIncome,</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">dom =</span> eusilcA_smp<span class="sc">$</span>district,</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">sweight =</span> eusilcA_smp<span class="sc">$</span>weight,</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">domsize =</span> domsize_smp,</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">replace =</span> <span class="cn">FALSE</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> </span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Var =</span> SD<span class="sc">^</span><span class="dv">2</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(Domain, Direct, Var)</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit intercept-only Fay-Herriot model (no covariates)</span></span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>fh <span class="ot">&lt;-</span> sae<span class="sc">::</span><span class="fu">mseFH</span>(</span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> dir_est<span class="sc">$</span>Direct <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">vardir =</span> dir_est<span class="sc">$</span>Var</span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract EBLUPs and RMSEs for sampled domains</span></span>
+<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a>fh_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">Domain =</span> dir_est<span class="sc">$</span>Domain,</span>
+<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">Estimate =</span> fh<span class="sc">$</span>est<span class="sc">$</span>eblup,</span>
+<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">Estimator_Type =</span> <span class="st">"EBLUP"</span>,</span>
+<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">RMSE =</span> <span class="fu">sqrt</span>(fh<span class="sc">$</span>mse)</span>
+<span id="cb37-24"><a href="#cb37-24" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb37-25"><a href="#cb37-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-26"><a href="#cb37-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract model intercept and standard error</span></span>
+<span id="cb37-27"><a href="#cb37-27" aria-hidden="true" tabindex="-1"></a>intercept <span class="ot">&lt;-</span> fh<span class="sc">$</span>est<span class="sc">$</span>fit<span class="sc">$</span>estcoef[<span class="st">"X"</span>, <span class="st">"beta"</span>]</span>
+<span id="cb37-28"><a href="#cb37-28" aria-hidden="true" tabindex="-1"></a>se <span class="ot">&lt;-</span> fh<span class="sc">$</span>est<span class="sc">$</span>fit<span class="sc">$</span>estcoef[<span class="st">"X"</span>, <span class="st">"std.error"</span>]</span>
+<span id="cb37-29"><a href="#cb37-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-30"><a href="#cb37-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Identify out-of-sample domains</span></span>
+<span id="cb37-31"><a href="#cb37-31" aria-hidden="true" tabindex="-1"></a>oos_domains <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(eusilcA_popAgg<span class="sc">$</span>Domain, dir_est<span class="sc">$</span>Domain)</span>
+<span id="cb37-32"><a href="#cb37-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-33"><a href="#cb37-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Create synthetic estimates for OOS domains</span></span>
+<span id="cb37-34"><a href="#cb37-34" aria-hidden="true" tabindex="-1"></a>oos_estimates <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb37-35"><a href="#cb37-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">Domain =</span> oos_domains,</span>
+<span id="cb37-36"><a href="#cb37-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">Estimate =</span> intercept,</span>
+<span id="cb37-37"><a href="#cb37-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">Estimator_Type =</span> <span class="st">"Synthetic"</span>,</span>
+<span id="cb37-38"><a href="#cb37-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">RMSE =</span> se</span>
+<span id="cb37-39"><a href="#cb37-39" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb37-40"><a href="#cb37-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-41"><a href="#cb37-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine sampled and out-of-sample estimates</span></span>
+<span id="cb37-42"><a href="#cb37-42" aria-hidden="true" tabindex="-1"></a>fh_area_level_intercept <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(fh_df, oos_estimates) <span class="sc">%&gt;%</span> </span>
+<span id="cb37-43"><a href="#cb37-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Domain)</span>
+<span id="cb37-44"><a href="#cb37-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-45"><a href="#cb37-45" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(fh_area_level_intercept)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               Domain Estimate Estimator_Type     RMSE
+1           Amstetten 16128.32          EBLUP 2217.438
+2               Baden 20228.42          EBLUP 2584.317
+3             Bludenz 14402.31          EBLUP 2333.158
+4      Braunau am Inn 13838.66          EBLUP 1972.521
+5             Bregenz 22122.12          EBLUP 3125.592
+6 Bruck an der Leitha 19955.96          EBLUP 2851.786</code></pre>
+</div>
+</div>
+</section>
+<section id="fay-herriot-model-with-auxiliary-variables" class="level3">
+<h3 class="anchored" data-anchor-id="fay-herriot-model-with-auxiliary-variables">Fay-Herriot model with auxiliary variables</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Add more covariates</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>X_covar <span class="ot">&lt;-</span> <span class="fu">merge</span>(dir_est, eusilcA_popAgg[,<span class="fu">c</span>(<span class="st">"Domain"</span>,<span class="st">"cash"</span>)])</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit model with covariates</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>fh_cov <span class="ot">&lt;-</span> <span class="fu">mseFH</span>(</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> Direct <span class="sc">~</span> cash,</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">vardir =</span> Var,</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> X_covar</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Format it as a table</span></span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>fh_cov_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Domain"</span> <span class="ot">=</span> dir_est<span class="sc">$</span>Domain,</span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">EBLUP =</span> fh_cov<span class="sc">$</span>est<span class="sc">$</span>eblup,</span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">RMSE =</span> <span class="fu">sqrt</span>(fh_cov<span class="sc">$</span>mse)</span>
+<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-18"><a href="#cb39-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract parameter estimates</span></span>
+<span id="cb39-19"><a href="#cb39-19" aria-hidden="true" tabindex="-1"></a>intercept <span class="ot">&lt;-</span> fh_cov<span class="sc">$</span>est<span class="sc">$</span>fit<span class="sc">$</span>estcoef[<span class="st">"X(Intercept)"</span>, <span class="st">"beta"</span>]</span>
+<span id="cb39-20"><a href="#cb39-20" aria-hidden="true" tabindex="-1"></a>slope_cash <span class="ot">&lt;-</span> fh_cov<span class="sc">$</span>est<span class="sc">$</span>fit<span class="sc">$</span>estcoef[<span class="st">"Xcash"</span>, <span class="st">"beta"</span>]</span>
+<span id="cb39-21"><a href="#cb39-21" aria-hidden="true" tabindex="-1"></a>se_intercept <span class="ot">&lt;-</span> fh_cov<span class="sc">$</span>est<span class="sc">$</span>fit<span class="sc">$</span>estcoef[<span class="st">"X(Intercept)"</span>, <span class="st">"std.error"</span>]</span>
+<span id="cb39-22"><a href="#cb39-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-23"><a href="#cb39-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare covariates for all domains</span></span>
+<span id="cb39-24"><a href="#cb39-24" aria-hidden="true" tabindex="-1"></a>X_all <span class="ot">&lt;-</span> eusilcA_popAgg[, <span class="fu">c</span>(<span class="st">"Domain"</span>, <span class="st">"cash"</span>)]</span>
+<span id="cb39-25"><a href="#cb39-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-26"><a href="#cb39-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict synthetic estimate for all areas</span></span>
+<span id="cb39-27"><a href="#cb39-27" aria-hidden="true" tabindex="-1"></a>X_all <span class="ot">&lt;-</span> X_all <span class="sc">%&gt;%</span></span>
+<span id="cb39-28"><a href="#cb39-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb39-29"><a href="#cb39-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">Estimate =</span> intercept <span class="sc">+</span> slope_cash <span class="sc">*</span> cash</span>
+<span id="cb39-30"><a href="#cb39-30" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb39-31"><a href="#cb39-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-32"><a href="#cb39-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Mark sample status</span></span>
+<span id="cb39-33"><a href="#cb39-33" aria-hidden="true" tabindex="-1"></a>X_all<span class="sc">$</span>in_sample <span class="ot">&lt;-</span> X_all<span class="sc">$</span>Domain <span class="sc">%in%</span> dir_est<span class="sc">$</span>Domain</span>
+<span id="cb39-34"><a href="#cb39-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-35"><a href="#cb39-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Add model EBLUPs and RMSEs for in-sample areas</span></span>
+<span id="cb39-36"><a href="#cb39-36" aria-hidden="true" tabindex="-1"></a>X_all <span class="ot">&lt;-</span> <span class="fu">left_join</span>(X_all, fh_cov_df, <span class="at">by =</span> <span class="st">"Domain"</span>, <span class="at">suffix =</span> <span class="fu">c</span>(<span class="st">"_synthetic"</span>, <span class="st">"_eblup"</span>))</span>
+<span id="cb39-37"><a href="#cb39-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-38"><a href="#cb39-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine estimates</span></span>
+<span id="cb39-39"><a href="#cb39-39" aria-hidden="true" tabindex="-1"></a>fh_area_level_covariates <span class="ot">&lt;-</span> X_all <span class="sc">%&gt;%</span></span>
+<span id="cb39-40"><a href="#cb39-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb39-41"><a href="#cb39-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">Final_Estimate =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(EBLUP), EBLUP, Estimate),</span>
+<span id="cb39-42"><a href="#cb39-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">Estimator_Type =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(EBLUP), <span class="st">"EBLUP"</span>, <span class="st">"Synthetic"</span>),</span>
+<span id="cb39-43"><a href="#cb39-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">Final_RMSE =</span> <span class="fu">ifelse</span>(<span class="sc">!</span><span class="fu">is.na</span>(RMSE), RMSE, se_intercept)</span>
+<span id="cb39-44"><a href="#cb39-44" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb39-45"><a href="#cb39-45" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(Domain, Final_Estimate, Estimator_Type, Final_RMSE) <span class="sc">%&gt;%</span> </span>
+<span id="cb39-46"><a href="#cb39-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Domain)</span>
+<span id="cb39-47"><a href="#cb39-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-48"><a href="#cb39-48" aria-hidden="true" tabindex="-1"></a><span class="co"># See output</span></span>
+<span id="cb39-49"><a href="#cb39-49" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(fh_area_level_covariates)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               Domain Final_Estimate Estimator_Type Final_RMSE
+1           Amstetten       13226.34          EBLUP   959.1525
+2               Baden       19689.37          EBLUP   780.5883
+3             Bludenz       12294.51          EBLUP   937.6942
+4      Braunau am Inn       12202.68          EBLUP  1119.8066
+5             Bregenz       30613.82          EBLUP  1329.5131
+6 Bruck an der Leitha       22398.59          EBLUP   803.8764</code></pre>
+</div>
+</div>
+</section>
+<section id="compare-models" class="level3">
+<h3 class="anchored" data-anchor-id="compare-models">Compare models</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Make sure both dfs are in the same order</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="fu">identical</span>(fh_area_level_intercept<span class="sc">$</span>Domain, fh_area_level_covariates<span class="sc">$</span>Domain)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create data frame for comparison</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>fh_comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Domain =</span> fh_area_level_intercept<span class="sc">$</span>Domain,</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Intercept_model_est =</span> fh_area_level_intercept<span class="sc">$</span>Estimate,</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Covariates_model_est =</span> fh_area_level_covariates<span class="sc">$</span>Final_Estimate</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Flag out-of-sample domains</span></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>oos <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(eusilcA_pop<span class="sc">$</span>district,eusilcA_smp<span class="sc">$</span>district)</span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>fh_comparison <span class="ot">&lt;-</span> fh_comparison <span class="sc">%&gt;%</span></span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sample_status =</span> <span class="fu">if_else</span>(Domain <span class="sc">%in%</span> oos, <span class="st">"out-of-sample"</span>, <span class="st">"in-sample"</span>))</span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot</span></span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a><span class="fu">ggpairs</span>(</span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> fh_comparison[,<span class="sc">-</span><span class="dv">1</span>],</span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">color =</span> sample_status)</span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_ipsum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in cor(x, y): the standard deviation is zero</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
